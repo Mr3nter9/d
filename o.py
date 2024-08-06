@@ -1,21 +1,15 @@
-import swisseph as swe
+from flatlib.datetime import Datetime
+from flatlib.chart import Chart
+from flatlib import const
 
 # إعداد البيانات
-year, month, day, hour = 1990, 7, 5, 12.5
+birth_date = Datetime('1990/07/05', '12:30', '+00:00')
 latitude, longitude = 51.5, -0.12
 
-# حساب المواضع
-jd = swe.julday(year, month, day, hour)
-planets = [swe.SUN, swe.MOON, swe.MERCURY, swe.VENUS, swe.MARS, swe.JUPITER, swe.SATURN, swe.URANUS, swe.NEPTUNE, swe.PLUTO]
-positions = {swe.get_planet_name(p): swe.calc_ut(jd, p)[0] for p in planets}
+# إنشاء خريطة فلكية
+chart = Chart(birth_date, (latitude, longitude))
 
-# عرض النتائج
-for planet, position in positions.items():
-    print(f"{planet}: {position:.2f} degrees")
-
-# حساب الصعود والتوسط
-asc = swe.houses(jd, latitude, longitude)[0][0]
-mc = swe.houses(jd, latitude, longitude)[0][9]
-
-print(f"Ascendant: {asc:.2f} degrees")
-print(f"Midheaven: {mc:.2f} degrees")
+# عرض الكواكب ومواضعها
+for name in const.LIST_OBJECTS:
+    obj = chart.get(name)
+    print(f"{name}: {obj.lon:.2f} degrees")
