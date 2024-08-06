@@ -1,45 +1,42 @@
 import matplotlib.pyplot as plt
-from astroquery.jplhorizons import Horizons
+import numpy as np
+from astropy.coordinates import get_body_barycentric, solar_system_ephemeris
+from astropy.time import Time
 
 # إعداد بيانات الميلاد (التاريخ، الوقت، والمكان)
 year, month, day = 1980, 1, 1
 hour, minute = 12, 0
 latitude, longitude = 37.7749, -122.4194  # موقع سان فرانسيسكو
 
-# حساب مواقع الكواكب
-obj_ids = {
-    'Sun': '10',
-    'Moon': '301',
-    'Mercury': '199',
-    'Venus': '299',
-    'Mars': '499',
-    'Jupiter': '599',
-    'Saturn': '699',
-    'Uranus': '799',
-    'Neptune': '899',
-    'Pluto': '999',
-}
+# إعداد الوقت
+birth_time = Time(f'{year}-{month:02d}-{day:02d}T{hour:02d}:{minute:02d}:00')
 
+# حساب مواقع الكواكب
+bodies = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']
 positions = {}
 
-for name, obj_id in obj_ids.items():
-    obj = Horizons(id=obj_id, location=f'geo={longitude},{latitude}', epochs={'start': f'{year}-{month}-{day}T{hour}:{minute}:00', 'stop': f'{year}-{month}-{day}T{hour}:{minute}:01', 'step': '1m'})
-    eph = obj.ephemerides()
-    positions[name] = float(eph['RA'][0])
+with solar_system_ephemeris.set('builtin'):
+    for body in bodies:
+        pos = get_body_barycentric(body, birth_time)
+        positions[body] = np.degrees(np.arctan2(pos.y, pos.x))
 
 # رسم الخريطة
-fig, ax = plt.subplots(figsize=(10, 10))
-ax.set_xlim(0, 360)
-ax.set_ylim(-1, 1)
+fig, ax = plt.subplots(figsize=(10, 10), subplot_kw={'projection': 'polar'})
+ax.set_theta_zero_location('E')
+ax.set_theta_direction(-1)
+ax.set_yticklabels([])
 
-# وضع علامات الكواكب على الدائرة
-for name, position in positions.items():
-    ax.text(position, 0, name, fontsize=12, ha='center', va='center')
+for body, angle in positions.items():
+    ax.text(np.radians(angle), 1, body.capitalize(), fontsize=12, ha='center', va='center')
 
-ax.set_yticks([])
-ax.set_xticks(range(0, 360, 30))
-ax.set_xticklabels(['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'])
+# إعداد علامات الأبراج
+zodiac = [
+    'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
+    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+]
+angles = np.linspace(0, 2 * np.pi, 13)
+for i, (angle, sign) in enumerate(zip(angles, zodiac)):
+    ax.text(angle, 1.1, sign, fontsize=10, ha='center', va='center')
 
-plt.grid(True)
 plt.title('Birth Chart')
 plt.show()
